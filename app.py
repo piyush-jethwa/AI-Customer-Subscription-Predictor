@@ -1,6 +1,6 @@
 # =========================================================
-# ADVANCED AI CUSTOMER SUBSCRIPTION PREDICTOR
-# PROFESSIONAL STREAMLIT WEB APP
+# AI CUSTOMER SUBSCRIPTION PREDICTOR
+# FULL STREAMLIT APP
 # =========================================================
 
 import streamlit as st
@@ -15,15 +15,16 @@ import time
 st.set_page_config(
     page_title="AI Subscription Predictor",
     page_icon="🛍️",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    layout="wide"
 )
 
 # =========================================================
-# LOAD MODEL
+# LOAD MODEL & ENCODERS
 # =========================================================
 
-model = joblib.load("subscription_prediction_model.pkl")
+model = joblib.load("subscription_model.pkl")
+
+encoders = joblib.load("encoders.pkl")
 
 # =========================================================
 # CUSTOM CSS
@@ -32,7 +33,7 @@ model = joblib.load("subscription_prediction_model.pkl")
 st.markdown("""
 <style>
 
-/* Main Background */
+/* Background */
 .stApp {
     background: linear-gradient(to right, #141E30, #243B55);
     color: white;
@@ -40,9 +41,9 @@ st.markdown("""
 
 /* Main Title */
 .main-title {
+    text-align: center;
     font-size: 55px;
     font-weight: bold;
-    text-align: center;
     color: white;
     margin-bottom: 10px;
 }
@@ -55,35 +56,26 @@ st.markdown("""
     margin-bottom: 40px;
 }
 
-/* Card Design */
+/* Card */
 .card {
     background: rgba(255,255,255,0.08);
     padding: 25px;
     border-radius: 20px;
     backdrop-filter: blur(10px);
     box-shadow: 0px 4px 20px rgba(0,0,0,0.3);
-    margin-bottom: 25px;
-}
-
-/* Metric Cards */
-.metric-card {
-    background: rgba(255,255,255,0.08);
-    padding: 20px;
-    border-radius: 15px;
-    text-align: center;
-    box-shadow: 0px 4px 15px rgba(0,0,0,0.2);
+    margin-bottom: 20px;
 }
 
 /* Button */
 .stButton>button {
     width: 100%;
     height: 60px;
+    border-radius: 15px;
     font-size: 22px;
     font-weight: bold;
-    border-radius: 15px;
-    border: none;
     background: linear-gradient(to right, #00C9FF, #92FE9D);
     color: black;
+    border: none;
     transition: 0.3s;
 }
 
@@ -98,7 +90,7 @@ st.markdown("""
     text-align: center;
     font-size: 30px;
     font-weight: bold;
-    margin-top: 30px;
+    margin-top: 20px;
 }
 
 /* Sidebar */
@@ -106,7 +98,7 @@ section[data-testid="stSidebar"] {
     background-color: #111827;
 }
 
-/* Hide Streamlit Footer */
+/* Hide Footer */
 footer {
     visibility: hidden;
 }
@@ -132,345 +124,377 @@ st.markdown(
 # SIDEBAR
 # =========================================================
 
-st.sidebar.title("📌 Navigation")
+st.sidebar.title("📌 About")
 
-menu = st.sidebar.radio(
-    "Go To",
-    [
-        "Prediction",
-        "About Project"
-    ]
-)
+st.sidebar.info("""
+This AI application predicts whether a customer
+is likely to subscribe based on shopping behavior.
 
-# =========================================================
-# ABOUT PROJECT
-# =========================================================
-
-if menu == "About Project":
-
-    st.markdown("## 📖 About This Project")
-
-    st.info("""
-    This AI-powered application predicts whether a customer
-    is likely to subscribe based on their shopping behavior.
-
-    ### 🚀 Technologies Used
-    - Python
-    - Streamlit
-    - Machine Learning
-    - Scikit-learn
-    - Random Forest Classifier
-
-    ### 📊 Features
-    ✅ Real-time prediction  
-    ✅ Probability analysis  
-    ✅ Interactive dashboard  
-    ✅ AI-based analytics  
-    """)
+✅ Machine Learning  
+✅ Real-time Prediction  
+✅ Probability Analysis  
+✅ Streamlit Dashboard  
+""")
 
 # =========================================================
-# PREDICTION PAGE
+# INPUT SECTION
 # =========================================================
 
-if menu == "Prediction":
+col1, col2 = st.columns(2)
 
-    # -----------------------------------------------------
-    # INPUT SECTION
-    # -----------------------------------------------------
+# =========================================================
+# LEFT COLUMN
+# =========================================================
 
-    col1, col2 = st.columns(2)
+with col1:
 
-    with col1:
+    st.markdown('<div class="card">', unsafe_allow_html=True)
 
-        st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.subheader("👤 Customer Information")
 
-        st.subheader("👤 Customer Information")
+    age = st.slider(
+        "Age",
+        18,
+        70,
+        25
+    )
 
-        age = st.slider(
-            "Age",
-            18,
-            70,
-            25
-        )
+    gender = st.selectbox(
+        "Gender",
+        ["Male", "Female"]
+    )
 
-        gender = st.selectbox(
-            "Gender",
-            ["Male", "Female"]
-        )
+    item_purchased = st.selectbox(
+        "Item Purchased",
+        [
+            "Blouse",
+            "Sweater",
+            "Jeans",
+            "Sandals",
+            "Shirt",
+            "Dress",
+            "Shoes",
+            "Handbag",
+            "Jacket",
+            "Jewelry"
+        ]
+    )
 
-        item_purchased = st.selectbox(
-            "Item Purchased",
-            [
-                "Blouse",
-                "Sweater",
-                "Jeans",
-                "Sandals",
-                "Shirt",
-                "Dress",
-                "Shoes",
-                "Handbag",
-                "Jacket",
-                "Jewelry"
-            ]
-        )
+    category = st.selectbox(
+        "Category",
+        [
+            "Clothing",
+            "Footwear",
+            "Accessories",
+            "Outerwear"
+        ]
+    )
 
-        category = st.selectbox(
-            "Category",
-            [
-                "Clothing",
-                "Footwear",
-                "Accessories",
-                "Outerwear"
-            ]
-        )
+    purchase_amount = st.number_input(
+        "Purchase Amount (USD)",
+        min_value=1,
+        max_value=1000,
+        value=120
+    )
 
-        purchase_amount = st.number_input(
-            "Purchase Amount (USD)",
-            min_value=1,
-            max_value=1000,
-            value=120
-        )
+    location = st.selectbox(
+        "Location",
+        [
+            "California",
+            "Texas",
+            "Florida",
+            "New York"
+        ]
+    )
 
-        location = st.selectbox(
-            "Location",
-            [
-                "California",
-                "Texas",
-                "Florida",
-                "New York",
-                "Nevada",
-                "Kentucky",
-                "Maine"
-            ]
-        )
+    size = st.selectbox(
+        "Size",
+        ["S", "M", "L", "XL"]
+    )
 
-        size = st.selectbox(
-            "Size",
-            ["S", "M", "L", "XL"]
-        )
+    st.markdown('</div>', unsafe_allow_html=True)
 
-        st.markdown('</div>', unsafe_allow_html=True)
+# =========================================================
+# RIGHT COLUMN
+# =========================================================
 
-    with col2:
+with col2:
 
-        st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.markdown('<div class="card">', unsafe_allow_html=True)
 
-        st.subheader("🛒 Shopping Information")
+    st.subheader("🛒 Shopping Information")
 
-        color = st.selectbox(
-            "Color",
-            [
-                "Black",
-                "Blue",
-                "Red",
-                "White",
-                "Green",
-                "Gray",
-                "Maroon"
-            ]
-        )
+    color = st.selectbox(
+        "Color",
+        [
+            "Black",
+            "Blue",
+            "Red",
+            "White",
+            "Green",
+            "Gray",
+            "Maroon"
+        ]
+    )
 
-        season = st.selectbox(
-            "Season",
-            [
-                "Spring",
-                "Summer",
-                "Autumn",
-                "Winter"
-            ]
-        )
+    season = st.selectbox(
+        "Season",
+        [
+            "Spring",
+            "Summer",
+            "Autumn",
+            "Winter"
+        ]
+    )
 
-        review_rating = st.slider(
-            "Review Rating",
-            1.0,
-            5.0,
-            4.5
-        )
+    review_rating = st.slider(
+        "Review Rating",
+        1.0,
+        5.0,
+        4.5
+    )
 
-        shipping_type = st.selectbox(
-            "Shipping Type",
-            [
-                "Free Shipping",
-                "Express",
-                "Store Pickup",
-                "Next Day Air"
-            ]
-        )
+    shipping_type = st.selectbox(
+        "Shipping Type",
+        [
+            "Free Shipping",
+            "Express",
+            "Store Pickup",
+            "Next Day Air"
+        ]
+    )
 
-        discount_applied = st.selectbox(
-            "Discount Applied",
-            ["Yes", "No"]
-        )
+    discount_applied = st.selectbox(
+        "Discount Applied",
+        ["Yes", "No"]
+    )
 
-        promo_code_used = st.selectbox(
-            "Promo Code Used",
-            ["Yes", "No"]
-        )
+    promo_code_used = st.selectbox(
+        "Promo Code Used",
+        ["Yes", "No"]
+    )
 
-        previous_purchases = st.number_input(
-            "Previous Purchases",
-            min_value=0,
-            max_value=100,
-            value=40
-        )
+    previous_purchases = st.number_input(
+        "Previous Purchases",
+        min_value=0,
+        max_value=100,
+        value=40
+    )
 
-        payment_method = st.selectbox(
-            "Payment Method",
-            [
-                "Credit Card",
-                "Debit Card",
-                "PayPal",
-                "Cash",
-                "Venmo"
-            ]
-        )
+    payment_method = st.selectbox(
+        "Payment Method",
+        [
+            "Credit Card",
+            "Debit Card",
+            "PayPal",
+            "Cash",
+            "Venmo"
+        ]
+    )
 
-        frequency_of_purchases = st.selectbox(
-            "Frequency of Purchases",
-            [
-                "Weekly",
-                "Fortnightly",
-                "Monthly",
-                "Quarterly",
-                "Annually"
-            ]
-        )
+    frequency_of_purchases = st.selectbox(
+        "Frequency of Purchases",
+        [
+            "Weekly",
+            "Fortnightly",
+            "Monthly",
+            "Quarterly",
+            "Annually"
+        ]
+    )
 
-        st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# =========================================================
+# PREDICTION BUTTON
+# =========================================================
+
+if st.button("🚀 Predict Subscription"):
+
+    with st.spinner("Analyzing customer behavior..."):
+
+        time.sleep(2)
+
+        # =================================================
+        # ENCODE INPUTS
+        # =================================================
+
+        input_dict = {
+
+            "Age": age,
+
+            "Gender":
+            encoders["Gender"].transform([gender])[0],
+
+            "Item Purchased":
+            encoders["Item Purchased"].transform(
+                [item_purchased]
+            )[0],
+
+            "Category":
+            encoders["Category"].transform(
+                [category]
+            )[0],
+
+            "Purchase Amount (USD)":
+            purchase_amount,
+
+            "Location":
+            encoders["Location"].transform(
+                [location]
+            )[0],
+
+            "Size":
+            encoders["Size"].transform(
+                [size]
+            )[0],
+
+            "Color":
+            encoders["Color"].transform(
+                [color]
+            )[0],
+
+            "Season":
+            encoders["Season"].transform(
+                [season]
+            )[0],
+
+            "Review Rating":
+            review_rating,
+
+            "Shipping Type":
+            encoders["Shipping Type"].transform(
+                [shipping_type]
+            )[0],
+
+            "Discount Applied":
+            encoders["Discount Applied"].transform(
+                [discount_applied]
+            )[0],
+
+            "Promo Code Used":
+            encoders["Promo Code Used"].transform(
+                [promo_code_used]
+            )[0],
+
+            "Previous Purchases":
+            previous_purchases,
+
+            "Payment Method":
+            encoders["Payment Method"].transform(
+                [payment_method]
+            )[0],
+
+            "Frequency of Purchases":
+            encoders["Frequency of Purchases"].transform(
+                [frequency_of_purchases]
+            )[0]
+        }
+
+        # =================================================
+        # CREATE DATAFRAME
+        # =================================================
+
+        input_df = pd.DataFrame([input_dict])
+
+        # =================================================
+        # PREDICTION
+        # =================================================
+
+        prediction = model.predict(input_df)[0]
+
+        probabilities = model.predict_proba(input_df)[0]
+
+        no_probability = round(probabilities[0] * 100, 2)
+
+        yes_probability = round(probabilities[1] * 100, 2)
 
     # =====================================================
-    # PREDICTION BUTTON
+    # RESULTS
     # =====================================================
 
-    if st.button("🚀 Predict Subscription"):
+    st.markdown("---")
 
-        with st.spinner("Analyzing customer behavior..."):
+    st.subheader("📊 Prediction Analytics")
 
-            time.sleep(2)
+    metric1, metric2 = st.columns(2)
 
-            # -------------------------------------------------
-            # CREATE DATAFRAME
-            # -------------------------------------------------
+    with metric1:
 
-            input_data = pd.DataFrame({
-
-                "Age": [age],
-                "Gender": [gender],
-                "Item Purchased": [item_purchased],
-                "Category": [category],
-                "Purchase Amount (USD)": [purchase_amount],
-                "Location": [location],
-                "Size": [size],
-                "Color": [color],
-                "Season": [season],
-                "Review Rating": [review_rating],
-                "Shipping Type": [shipping_type],
-                "Discount Applied": [discount_applied],
-                "Promo Code Used": [promo_code_used],
-                "Previous Purchases": [previous_purchases],
-                "Payment Method": [payment_method],
-                "Frequency of Purchases": [frequency_of_purchases]
-
-            })
-
-            # -------------------------------------------------
-            # MODEL PREDICTION
-            # -------------------------------------------------
-
-            prediction = model.predict(input_data)[0]
-
-            probabilities = model.predict_proba(input_data)[0]
-
-            no_probability = round(probabilities[0] * 100, 2)
-
-            yes_probability = round(probabilities[1] * 100, 2)
-
-        # =====================================================
-        # RESULTS
-        # =====================================================
-
-        st.markdown("---")
-
-        st.subheader("📊 Prediction Analytics")
-
-        metric1, metric2 = st.columns(2)
-
-        with metric1:
-
-            st.metric(
-                "YES Probability",
-                f"{yes_probability}%"
-            )
-
-            st.progress(int(yes_probability))
-
-        with metric2:
-
-            st.metric(
-                "NO Probability",
-                f"{no_probability}%"
-            )
-
-            st.progress(int(no_probability))
-
-        # =====================================================
-        # BAR CHART
-        # =====================================================
-
-        chart_data = pd.DataFrame({
-            "Prediction": ["YES", "NO"],
-            "Probability": [yes_probability, no_probability]
-        })
-
-        st.bar_chart(
-            chart_data.set_index("Prediction")
+        st.metric(
+            "YES Probability",
+            f"{yes_probability}%"
         )
 
-        # =====================================================
-        # CUSTOMER INSIGHTS
-        # =====================================================
+        st.progress(int(yes_probability))
 
-        st.subheader("💡 AI Customer Insights")
+    with metric2:
 
-        if previous_purchases > 30:
-            st.info("⭐ Loyal customer detected.")
+        st.metric(
+            "NO Probability",
+            f"{no_probability}%"
+        )
 
-        if purchase_amount > 100:
-            st.info("💰 High spending behavior identified.")
+        st.progress(int(no_probability))
 
-        if review_rating > 4:
-            st.info("🌟 Customer gives excellent reviews.")
+    # =====================================================
+    # CHART
+    # =====================================================
 
-        if frequency_of_purchases == "Weekly":
-            st.info("🛒 Frequent shopper detected.")
+    chart_data = pd.DataFrame({
+        "Prediction": ["YES", "NO"],
+        "Probability": [yes_probability, no_probability]
+    })
 
-        # =====================================================
-        # FINAL RESULT
-        # =====================================================
+    st.bar_chart(
+        chart_data.set_index("Prediction")
+    )
 
-        if prediction == "Yes":
+    # =====================================================
+    # AI INSIGHTS
+    # =====================================================
 
-            st.markdown(
-                """
-                <div class="prediction-box"
-                style="background: linear-gradient(to right, #11998E, #38EF7D);">
-                ✅ Customer is likely to Subscribe!
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+    st.subheader("💡 AI Customer Insights")
 
-        else:
+    if previous_purchases > 30:
+        st.info("⭐ Loyal customer detected.")
 
-            st.markdown(
-                """
-                <div class="prediction-box"
-                style="background: linear-gradient(to right, #FF416C, #FF4B2B);">
-                ❌ Customer is NOT likely to Subscribe.
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+    if purchase_amount > 100:
+        st.info("💰 High spending behavior identified.")
+
+    if review_rating > 4:
+        st.info("🌟 Excellent review ratings detected.")
+
+    if frequency_of_purchases == "Weekly":
+        st.info("🛒 Frequent shopper detected.")
+
+    # =====================================================
+    # FINAL RESULT
+    # =====================================================
+
+    if prediction == 1:
+
+        st.markdown(
+            """
+            <div class="prediction-box"
+            style="background: linear-gradient(to right, #11998E, #38EF7D);">
+            ✅ Customer is likely to Subscribe!
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    else:
+
+        st.markdown(
+            """
+            <div class="prediction-box"
+            style="background: linear-gradient(to right, #FF416C, #FF4B2B);">
+            ❌ Customer is NOT likely to Subscribe.
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
 # =========================================================
 # FOOTER
